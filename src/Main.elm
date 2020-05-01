@@ -14,12 +14,51 @@ type alias GameState = {
   }
 
 main = game view update {
-  cellSize = 30,
+  cellSize = 20,
   grid = Dict.empty,
   isRunning = False,
   frame = 0,
   lastSpace = False
   }
+
+gliderGun = [
+  (6,1),
+  (6,2),
+  (7,1),
+  (7,2),
+  (6,11),
+  (7,11),
+  (8,11),
+  (5,12),
+  (9,12),
+  (4,13),
+  (4,14),
+  (10,13),
+  (10,14),
+  (7,15),
+  (5,16),
+  (9,16),
+  (7,17),
+  (6,17),
+  (8,17),
+  (7,18),
+  (6,21),
+  (5,21),
+  (4,21),
+  (6,22),
+  (5,22),
+  (4,22),
+  (7,23),
+  (3,23),
+  (7,25),
+  (3,25),
+  (8,25),
+  (2,25),
+  (4,35),
+  (4,36),
+  (5,35),
+  (5,36)
+  ]
 
 -- VIEW
 view: Computer -> GameState -> List Shape
@@ -69,6 +108,7 @@ moveTopLeft {top, left} shape =
 update {mouse, keyboard, screen} state =
   {state | frame = state.frame + 1}
   |> initGrid screen
+  |> loadPattern gliderGun
   |> handleClick mouse screen
   |> handleSpacebar keyboard
   |> handleEnter keyboard
@@ -82,11 +122,17 @@ initGrid screen state =
   else
     state
 
+loadPattern: List (Int, Int) -> GameState -> GameState
+loadPattern pattern state =
+  if List.all (\v -> v == Dead) (Dict.values state.grid) && not state.isRunning then
+    {state | grid = List.foldl toggleCell state.grid pattern}
+  else
+    state
 
 handleClick: Mouse -> Screen -> GameState -> GameState
 handleClick mouse screen state =
   if mouse.click then
-    {state | grid = toggleCell state.grid (convertToGrid screen state.cellSize mouse)}
+    {state | grid = toggleCell (convertToGrid screen state.cellSize mouse) state.grid}
   else
     state
 
@@ -149,8 +195,8 @@ getCellState: Grid -> (Int, Int) -> CellState
 getCellState grid key = Maybe.withDefault Dead (Dict.get key grid)
 
 
-toggleCell: Grid -> (Int, Int) -> Grid
-toggleCell grid index = Dict.update index toggleCellState grid
+toggleCell: (Int, Int) -> Grid -> Grid
+toggleCell index grid = Dict.update index toggleCellState grid
 
 
 convertToGrid: Screen -> Number -> Mouse -> (Int, Int)
