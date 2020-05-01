@@ -71,6 +71,7 @@ update {mouse, keyboard, screen} state =
   |> initGrid screen
   |> handleClick mouse screen
   |> handleSpacebar keyboard
+  |> handleEnter keyboard
   |> runGame
 
 
@@ -97,6 +98,12 @@ handleSpacebar {space} state =
   else
     {state | lastSpace = space}
 
+handleEnter: Keyboard -> GameState -> GameState
+handleEnter {enter} state =
+  if enter then
+    {state | grid = Dict.map (\k -> \a -> Dead) state.grid, isRunning = False}
+  else
+    state
 
 runGame: GameState -> GameState
 runGame state =
