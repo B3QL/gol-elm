@@ -7,7 +7,6 @@ type alias Grid = Dict.Dict (Int, Int) CellState
 
 type alias GameState = {
   cellSize: Number,
-  cellPadding: Number,
   grid: Grid,
   isRunning: Bool,
   frame: Int,
@@ -16,7 +15,6 @@ type alias GameState = {
 
 main = game view update {
   cellSize = 30,
-  cellPadding = 2 ,
   grid = Dict.empty,
   isRunning = False,
   frame = 0,
@@ -31,14 +29,17 @@ view computer state =
 
 
 cell: Screen -> GameState -> Int -> Int -> Shape
-cell screen {cellSize, cellPadding, grid} row col =
+cell screen {cellSize, grid} row col =
   grid
   |> Dict.get (row, col)
   |> Maybe.withDefault Dead
   |> cellColor
-  |> squareFromCorner (cellSize - cellPadding)
+  |> squareFromCorner (cellPadding cellSize)
   |> moveTopLeft screen
   |> moveFromCorner (cellSize * (toFloat col)) (cellSize * (toFloat row))
+
+cellPadding: Number -> Number
+cellPadding cellSize = cellSize * 0.9
 
 cellColor: CellState -> Color
 cellColor state =
