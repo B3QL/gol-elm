@@ -16,7 +16,7 @@ jobs:
         with:
           elm-version: 0.19.1
       - name: Build webpage
-        - run: elm make --optimize src/Main.elm --output=public/index.html
+        run: elm make --optimize src/Main.elm --output=public/index.html
 
       - name: Deploy webpage
         uses: peaceiris/actions-gh-pages@v3
