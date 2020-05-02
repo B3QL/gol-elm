@@ -2,6 +2,8 @@ module Main exposing (..)
 
 import Dict
 import Playground exposing (..)
+import Set
+import String
 
 
 type CellState
@@ -18,7 +20,8 @@ type alias GameState =
     , grid : Grid
     , isRunning : Bool
     , frame : Int
-    , lastSpace : Bool
+    , spacePressed : Bool
+    , numPressed : Bool
     }
 
 
@@ -29,7 +32,8 @@ main =
         , grid = Dict.empty
         , isRunning = False
         , frame = 0
-        , lastSpace = False
+        , spacePressed = False
+        , numPressed = False
         }
 
 
@@ -70,6 +74,31 @@ gliderGun =
     , ( 4, 36 )
     , ( 5, 35 )
     , ( 5, 36 )
+    ]
+
+
+xkcdMemorial =
+    [ ( 1, 3 )
+    , ( 1, 4 )
+    , ( 1, 5 )
+    , ( 2, 3 )
+    , ( 2, 5 )
+    , ( 3, 3 )
+    , ( 3, 5 )
+    , ( 4, 4 )
+    , ( 5, 4 )
+    , ( 6, 4 )
+    , ( 7, 4 )
+    , ( 8, 3 )
+    , ( 9, 3 )
+    , ( 8, 5 )
+    , ( 9, 5 )
+    , ( 5, 5 )
+    , ( 5, 3 )
+    , ( 6, 2 )
+    , ( 5, 1 )
+    , ( 6, 6 )
+    , ( 7, 7 )
     ]
 
 
@@ -136,10 +165,10 @@ moveTopLeft { top, left } shape =
 update { mouse, keyboard, screen } state =
     { state | frame = state.frame + 1 }
         |> initGrid screen
-        |> loadPattern gliderGun
+        |> loadPattern keyboard screen
         |> handleClick mouse screen
         |> handleSpacebar keyboard
-        |> handleEnter keyboard
+        |> handleReset keyboard
         |> runGame
 
 
@@ -152,13 +181,46 @@ initGrid screen state =
         state
 
 
-loadPattern : List ( Int, Int ) -> GameState -> GameState
-loadPattern pattern state =
-    if List.all (\v -> v == Dead) (Dict.values state.grid) && not state.isRunning then
-        { state | grid = List.foldl toggleCell state.grid pattern }
+loadPattern : Keyboard -> Screen -> GameState -> GameState
+loadPattern keyboard screen state =
+    if state.numPressed && Set.member "1" keyboard.keys then
+        { state | grid = gridFromPattern (moveToCenter xkcdMemorial state.grid) state.grid, isRunning = False, numPressed = isNumPressed keyboard }
+
+    else if state.numPressed && Set.member "2" keyboard.keys then
+        { state | grid = gridFromPattern gliderGun state.grid, isRunning = False, numPressed = isNumPressed keyboard }
 
     else
-        state
+        { state | numPressed = isNumPressed keyboard }
+
+
+isNumPressed : Keyboard -> Bool
+isNumPressed { keys } =
+    List.range 0 9
+        |> List.map String.fromInt
+        |> Set.fromList
+        |> Set.intersect keys
+        |> Set.isEmpty
+
+
+moveToCenter : List ( Int, Int ) -> Grid -> List ( Int, Int )
+moveToCenter pattern grid =
+    pattern
+        |> List.map (\x -> ( Tuple.first x + Tuple.first (centerCell grid), Tuple.second x + Tuple.second (centerCell grid) ))
+
+
+centerCell : Grid -> ( Int, Int )
+centerCell grid =
+    grid
+        |> Dict.keys
+        |> List.unzip
+        |> Tuple.mapBoth List.maximum List.maximum
+        |> Tuple.mapBoth (Maybe.withDefault 0) (Maybe.withDefault 0)
+        |> Tuple.mapBoth (\x -> x // 2) (\x -> x // 2)
+
+
+gridFromPattern : List ( Int, Int ) -> Grid -> Grid
+gridFromPattern pattern grid =
+    List.foldl toggleCell grid pattern
 
 
 handleClick : Mouse -> Screen -> GameState -> GameState
@@ -172,16 +234,16 @@ handleClick mouse screen state =
 
 handleSpacebar : Keyboard -> GameState -> GameState
 handleSpacebar { space } state =
-    if state.lastSpace && not space then
-        { state | isRunning = not state.isRunning, lastSpace = space }
+    if state.spacePressed && not space then
+        { state | isRunning = not state.isRunning, spacePressed = space }
 
     else
-        { state | lastSpace = space }
+        { state | spacePressed = space }
 
 
-handleEnter : Keyboard -> GameState -> GameState
-handleEnter { enter } state =
-    if enter then
+handleReset : Keyboard -> GameState -> GameState
+handleReset { keys } state =
+    if Set.member "r" keys then
         { state | grid = Dict.map (\k -> \a -> Dead) state.grid, isRunning = False }
 
     else
